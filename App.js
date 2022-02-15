@@ -15,22 +15,31 @@ const inPersonUsers = ${JSON.stringify(inPersonUsers)}\n
 module.exports = {onlineUsers,inPersonUsers}
 `
 const exchangeFileData = () => {
-    fs.readdir(path.join(process.cwd(), 'main', 'onLine'), {withFileTypes: true}, (e, data) => {
-        data = data.filter(item => item.name.includes('.txt'))
-        data.forEach(item => fs.rename(
-            path.join(process.cwd(), 'main', 'onLine', item.name),
-            path.join(process.cwd(), 'main', 'onLine', 'inPerson', item.name), () => {
-                console.log('Ok')
-            }))
-    })
-    fs.readdir(path.join(process.cwd(), 'main', 'onLine', 'inPerson'), {withFileTypes: true}, (e, data) => {
-        data = data.filter(item => item.name.includes('.txt'))
-        data.forEach(item => fs.rename(
-            path.join(process.cwd(), 'main', 'onLine', 'inPerson', item.name),
-            path.join(process.cwd(), 'main', 'onLine', item.name), () => {
-                console.log('Ok')
-            }))
-    })
+    fs.readdir(path.join(process.cwd(), 'main', 'onLine'),
+        {withFileTypes: true},
+        (e, data) => {
+            data = data.filter(item => item.name.includes('.txt'))
+            data.forEach(item => fs.rename(
+                path.join(process.cwd(), 'main', 'onLine', item.name),
+                path.join(process.cwd(), 'main', 'onLine', 'inPerson', item.name),
+                (err) => {
+                    if (err) {
+                        throw err
+                    }
+                }))
+        })
+    fs.readdir(path.join(process.cwd(), 'main', 'onLine', 'inPerson'),
+        {withFileTypes: true}, (e, data) => {
+            data = data.filter(item => item.name.includes('.txt'))
+            data.forEach(item => fs.rename(
+                path.join(process.cwd(), 'main', 'onLine', 'inPerson', item.name),
+                path.join(process.cwd(), 'main', 'onLine', item.name),
+                (err) => {
+                    if (err) {
+                        throw err
+                    }
+                }))
+        })
 
 }
 
@@ -39,25 +48,36 @@ const app = () => {
         {recursive: true},
         (err) => {
             if (err) {
+                throw err
             }
             fs.writeFile(
                 path.join(__dirname, 'main', 'index.js'),
                 dataTransfer.trim(),
                 {flag: 'w'},
                 (err) => {
+                    if (err) {
+                        throw err
+                    }
                     const {inPersonUsers: inPersonU, onlineUsers: onlineU} = require('./main/index')
                     const next = () => {
                         onlineU.forEach(item => {
-                            fs.writeFile(path.join(__dirname, 'main', 'onLine', `${item.user.name}.onLine.txt`), `${JSON.stringify(item.user)}`, (err) => {
-                                if (err) {
-                                }
-                            })
+                            fs.writeFile(path.join(__dirname, 'main', 'onLine', `${item.user.name}.onLine.txt`),
+                                `${JSON.stringify(item.user)}`,
+                                (err) => {
+                                    if (err) {
+                                        throw err
+                                    }
+                                })
                         })
                         inPersonU.forEach(item => {
-                            fs.writeFile(path.join(__dirname, 'main', 'onLine', 'inPerson', `${item.user.name}.inPerson.txt`), `${JSON.stringify(item.user)}`, (err) => {
-                                if (err) {
-                                }
-                            })
+                            fs.writeFile(path.join(__dirname, 'main', 'onLine', 'inPerson',
+                                    `${item.user.name}.inPerson.txt`),
+                                `${JSON.stringify(item.user)}`,
+                                (err) => {
+                                    if (err) {
+                                        throw err
+                                    }
+                                })
                         })
                     }
                     next()
