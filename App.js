@@ -1,87 +1,79 @@
 const fs = require('fs')
 const path = require('path')
 
-
-const onlineUsers = [
-    {user: {name: 'Andriy', age: 25, city: 'Lviv'}},
-    {user: {name: 'Viktor', age: 22, city: 'Zaporozhye'}},
-    {user: {name: 'Evgeniy', age: 29, city: 'Lviv'}},
-]
-const inPersonUsers = [{user: {name: 'Alex', age: 42, city: 'Kiev'}}]
-
-const dataTransfer = `
-const onlineUsers = ${JSON.stringify(onlineUsers)}
-const inPersonUsers = ${JSON.stringify(inPersonUsers)}\n
-module.exports = {onlineUsers,inPersonUsers}
-`
-const exchangeFileData = () => {
-    fs.readdir(path.join(process.cwd(), 'main', 'onLine'),
-        {withFileTypes: true},
-        (e, data) => {
-            data = data.filter(item => item.name.includes('.txt'))
-            data.forEach(item => fs.rename(
-                path.join(process.cwd(), 'main', 'onLine', item.name),
-                path.join(process.cwd(), 'main', 'onLine', 'inPerson', item.name),
-                (err) => {
-                    if (err) {
-                        throw err
-                    }
-                }))
-        })
-    fs.readdir(path.join(process.cwd(), 'main', 'onLine', 'inPerson'),
-        {withFileTypes: true}, (e, data) => {
-            data = data.filter(item => item.name.includes('.txt'))
-            data.forEach(item => fs.rename(
-                path.join(process.cwd(), 'main', 'onLine', 'inPerson', item.name),
-                path.join(process.cwd(), 'main', 'onLine', item.name),
-                (err) => {
-                    if (err) {
-                        throw err
-                    }
-                }))
-        })
-
-}
+const {fancyText} = require('./fancy_text/fancyText')
 
 const app = () => {
-    fs.mkdir(path.join(process.cwd(), 'main', 'onLine', 'inPerson'),
+
+    fs.rmdirSync(path.join(process.cwd(), 'main'), {recursive: true})
+    fs.rmdirSync(path.join(process.cwd(), 'another_folder'), {recursive: true})
+
+    const readDirRecursive = (dirPath = 'another_folder') => {
+        fs.readdir(path.join(process.cwd(), dirPath),
+            {withFileTypes: true},
+            (err, data) => {
+                if (!data) {
+                    return
+                }
+                data.forEach(item => {
+                    if (fs.statSync(path.join(process.cwd(), dirPath, item.name)).isDirectory()) {
+                        fs.rename(path.join(process.cwd(), dirPath, item.name),
+                            path.join(process.cwd(), dirPath, `new_${item.name}`),
+                            (err) => {
+                                if (err) {
+                                    throw err
+                                }
+                                readDirRecursive(path.join(dirPath, `new_${item.name}`))
+                            })
+
+                    } else {
+
+                        fs.readFile(path.join(process.cwd(), dirPath, item.name), (err1, data) => {
+                            if (err) {
+                                throw err
+                            }
+                            console.log(data.toString())
+                            fs.writeFile(path.join(process.cwd(), dirPath, item.name),
+                                '',
+                                (err) => {
+                                    if (err) {
+                                        throw err
+                                    }
+                                    console.log('\n!!!\nBut now file "textFromMain.txt" is cleared and totally empty\n')
+                                })
+                        })
+                    }
+                })
+            }
+        )
+    }
+
+    fs.mkdir(path.join(process.cwd(), 'main'),
         {recursive: true},
         (err) => {
             if (err) {
                 throw err
             }
-            fs.writeFile(
-                path.join(__dirname, 'main', 'index.js'),
-                dataTransfer.trim(),
-                {flag: 'w'},
-                (err) => {
+            fs.writeFile(path.join(process.cwd(), 'main', 'testText.txt'),
+                fancyText.toString().trim(), (err) => {
                     if (err) {
                         throw err
                     }
-                    const {inPersonUsers: inPersonU, onlineUsers: onlineU} = require('./main/index')
-                    const next = () => {
-                        onlineU.forEach(item => {
-                            fs.writeFile(path.join(__dirname, 'main', 'onLine', `${item.user.name}.onLine.txt`),
-                                `${JSON.stringify(item.user)}`,
+                    fs.mkdir(path.join(process.cwd(), 'another_folder', 'sub_folder', 'next_sub_folder', 'next'),
+                        {recursive: true}, (err) => {
+                            if (err) {
+                                throw err
+                            }
+                            fs.rename(
+                                path.join(process.cwd(), 'main', 'testText.txt'),
+                                path.join(process.cwd(), 'another_folder', 'textFromMain.txt'),
                                 (err) => {
                                     if (err) {
                                         throw err
                                     }
+                                    readDirRecursive()
                                 })
                         })
-                        inPersonU.forEach(item => {
-                            fs.writeFile(path.join(__dirname, 'main', 'onLine', 'inPerson',
-                                    `${item.user.name}.inPerson.txt`),
-                                `${JSON.stringify(item.user)}`,
-                                (err) => {
-                                    if (err) {
-                                        throw err
-                                    }
-                                })
-                        })
-                    }
-                    next()
-                    exchangeFileData()
                 })
         })
 }
